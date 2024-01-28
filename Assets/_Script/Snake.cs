@@ -4,26 +4,59 @@ using UnityEngine;
 
 namespace _Script
 {
+    public class AStarState
+    {
+        public Vector2 Current;
+        public Vector2 Goal;
+        public List<Vector2> MoveList = new();
+
+        public void Initialization(Vector2 current, Vector2 goal, List<Vector2> moveList)
+        {
+            Current = current;
+            Goal = goal;
+            MoveList = moveList.GetRange(0, moveList.Count);
+        }
+
+        public int Value()
+        {
+            return (int)(MoveList.Count + Math.Abs(Goal.x - Current.x) + Math.Abs(Goal.y - Current.y));
+        }   
+    }
+
+    public class AStarStateComparer : IComparer<AStarState>
+    {
+        public int Compare(AStarState x, AStarState y)
+        {
+            if (y != null && x != null && x.Value() > y.Value())
+                return -1;
+            else if (y != null && x != null && x.Value() < y.Value())
+                return 1;
+            else return 0;
+        }
+    }
+
     public class Snake : MonoBehaviour
     {
         public static Snake Instance;
         public Sprite Body;
         private List<GameObject> _snakeBody;
-        private Vector3 _direction;
+        private Vector2 _direction;
 
         private List<GameObject> _pool;
         
         private float _nextUpdate;
         private GameObject _defaultBody;
 
-        private List<Vector3> _moveList;
+        private List<Vector2> _moveList;
+
+        private readonly Dictionary<(int, int), bool> _visited = new Dictionary<(int, int), bool>();
 
         private void Awake()
         {
             Instance = this;
             _snakeBody = new List<GameObject>();
             _pool = new List<GameObject>();
-            _moveList = new List<Vector3>();
+            _moveList = new List<Vector2>();
         }
 
         void Start()
@@ -32,17 +65,12 @@ namespace _Script
             CreateSnake();
             _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
             _nextUpdate = Time.time;
-
-            _moveList.Add(new Vector3(1, 0, 0));
-            _moveList.Add(new Vector3(1, 0, 0));
-            _moveList.Add(new Vector3(0, 1, 0));
-            _moveList.Add(new Vector3(0, 0, 0));
         }
 
         void CreateSnake()
         {
-            _direction = new Vector3(0, -1, 0);
-            var body = CreateNewBody(new Vector3(0, 0, 0));
+            _direction = new Vector2(0, -1);
+            var body = CreateNewBody(new Vector2(0, 0));
             _snakeBody.Add(body);   
 
             GridSystem.Instance.SetGrid(0, 0, true);
@@ -50,9 +78,9 @@ namespace _Script
 
         void Update()
         {
-            HandleInput();
+            // HandleInput();
             if (!(Time.time >= _nextUpdate)) return;
-            // AutoMove();
+            AutoMove();
             Move();
             
             _nextUpdate = Time.time + GameManager.Instance.Delay;
@@ -60,7 +88,11 @@ namespace _Script
 
         void AutoMove()
         {
-            if (_moveList.Count == 0) return;
+            if (_moveList.Count == 0)
+            {
+                _direction = Vector2.zero;
+                return;
+            }
             _direction = _moveList[0];
             _moveList.RemoveAt(0);
         }
@@ -69,13 +101,13 @@ namespace _Script
         void Move()
         {
             var newPos = GetSnakePosition() + _direction;
-            if (!IsValidPosition(newPos)) return;
+            if (!IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f) return;
             
             
             _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.yellow;
             var body = CreateNewBody(newPos);
             _snakeBody.Insert(0, body);
-            GridSystem.Instance.SetGrid((int) newPos.x, (int) newPos.y, true);
+            // GridSystem.Instance.SetGrid((int) newPos.x, (int) newPos.y, true);
             if (IsEatFood(newPos))
             {
                 Food.Instance.GenerateRandomPosition();
@@ -83,14 +115,14 @@ namespace _Script
             else
             {
                 var tail = _snakeBody[^1];
-                GridSystem.Instance.SetGrid((int) tail.transform.position.x, (int) tail.transform.position.y, false);
+                // GridSystem.Instance.SetGrid((int) tail.transform.position.x, (int) tail.transform.position.y, false);
                 RemoveSnakeBodyAt(_snakeBody.Count - 1);
             }
             
             _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
         }
 
-        GameObject CreateNewBody(Vector3 position)
+        GameObject CreateNewBody(Vector2 position)
         {
             GameObject body;
             if (_pool.Count > 0)
@@ -120,23 +152,19 @@ namespace _Script
         {
             if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
             {
-                if (Math.Abs(_direction.x - 1) > 0.01)
-                    _direction = new Vector2(-1, 0);
+                _direction = new Vector2(-1, 0);
             }
             else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
             {
-                if (Math.Abs(_direction.x - (-1)) > 0.01)
-                    _direction = new Vector2(1, 0);
+                _direction = new Vector2(1, 0);
             }
             else if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
             {
-                if (Math.Abs(_direction.y - (-1)) > 0.01)
-                    _direction = new Vector2(0, 1);
+                _direction = new Vector2(0, 1);
             }
             else if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
             {
-                if (Math.Abs(_direction.y - 1) > 0.01)
-                    _direction = new Vector2(0, -1);
+                _direction = new Vector2(0, -1);
             }
         }
 
@@ -153,20 +181,77 @@ namespace _Script
             _defaultBody = body;
         }
 
-        private bool IsEatFood(Vector3 head)
+        private bool IsEatFood(Vector2 head)
         {
-            var foodPos = Food.Instance.transform.position;
-            return Vector3.Distance(foodPos, head) < 0.001f;
+            var foodPos = (Vector2) Food.Instance.transform.position;
+            return Vector2.Distance(foodPos, head) < 0.001f;
         }
 
-        private Vector3 GetSnakePosition()
+        private Vector2 GetSnakePosition()
         {
-            return _snakeBody[0].transform.position;
+            return (Vector2) _snakeBody[0].transform.position;
         }
 
-        public bool IsValidPosition(Vector3 position)
+        public bool IsValidPosition(Vector2 position)
         {
             return GridSystem.Instance.IsValidPosition(position);
+        }
+
+        private void AStarSearchFood()
+        {
+            _visited.Clear();
+
+            List<AStarState> aStarStates = new();
+            var tmp = new AStarState();
+
+            var head = GetSnakePosition();
+
+            var food = Food.Instance.transform.position;
+
+            tmp.Initialization(head, food, new List<Vector2>());
+
+            aStarStates.Add(tmp);
+
+            _visited[((int) head.x,(int) head.y)] = true;
+
+            var directionArray = new Vector2[4];
+            directionArray[0] = new Vector2(0, 1);
+            directionArray[1] = new Vector2(0, -1);
+            directionArray[2] = new Vector2(1, 0);
+            directionArray[3] = new Vector2(-1, 0);
+
+            while (aStarStates.Count > 0)
+            {
+                aStarStates.Sort(new AStarStateComparer());
+                var currentState = aStarStates[^1];
+                aStarStates.RemoveAt(aStarStates.Count - 1);
+
+                var currPos = currentState.Current;
+                for (var i = 0; i < 4; i++)
+                {
+                    var newPos = currPos + directionArray[i];
+                    var x = (int) newPos.x;
+                    var y = (int) newPos.y;
+
+                    if (IsValidPosition(newPos) && !_visited.ContainsKey((x, y)))
+                    {
+                        if (currentState.Goal == newPos) {
+                            _moveList = currentState.MoveList.GetRange(0, currentState.MoveList.Count);
+                            _moveList.Add(directionArray[i]);
+                            return;
+                        }
+                        else
+                        {
+                            var tmpState = new AStarState();
+                            tmpState.Initialization(newPos, food, currentState.MoveList);
+                            tmpState.MoveList.Add(directionArray[i]);
+                            aStarStates.Add(tmpState);
+                            _visited[(x, y)] = true;
+                        }
+                    }
+                }
+            }
+
         }
     }
 }
