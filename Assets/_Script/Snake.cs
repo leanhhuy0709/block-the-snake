@@ -14,14 +14,16 @@ namespace _Script
         private List<GameObject> _pool;
         
         private float _nextUpdate;
-
         private GameObject _defaultBody;
+
+        private List<Vector3> _moveList;
 
         private void Awake()
         {
             Instance = this;
             _snakeBody = new List<GameObject>();
             _pool = new List<GameObject>();
+            _moveList = new List<Vector3>();
         }
 
         void Start()
@@ -30,22 +32,37 @@ namespace _Script
             CreateSnake();
             _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
             _nextUpdate = Time.time;
+
+            _moveList.Add(new Vector3(1, 0, 0));
+            _moveList.Add(new Vector3(1, 0, 0));
+            _moveList.Add(new Vector3(0, 1, 0));
+            _moveList.Add(new Vector3(0, 0, 0));
         }
 
         void CreateSnake()
         {
             _direction = new Vector3(0, -1, 0);
-            var body = CreateNewBody(new Vector3(0,0,0));
+            var body = CreateNewBody(new Vector3(0, 0, 0));
             _snakeBody.Add(body);   
+
+            GridSystem.Instance.SetGrid(0, 0, true);
         }
 
         void Update()
         {
             HandleInput();
             if (!(Time.time >= _nextUpdate)) return;
+            // AutoMove();
             Move();
             
             _nextUpdate = Time.time + GameManager.Instance.Delay;
+        }
+
+        void AutoMove()
+        {
+            if (_moveList.Count == 0) return;
+            _direction = _moveList[0];
+            _moveList.RemoveAt(0);
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
@@ -58,12 +75,15 @@ namespace _Script
             _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.yellow;
             var body = CreateNewBody(newPos);
             _snakeBody.Insert(0, body);
+            GridSystem.Instance.SetGrid((int) newPos.x, (int) newPos.y, true);
             if (IsEatFood(newPos))
             {
                 Food.Instance.GenerateRandomPosition();
             }
             else
             {
+                var tail = _snakeBody[^1];
+                GridSystem.Instance.SetGrid((int) tail.transform.position.x, (int) tail.transform.position.y, false);
                 RemoveSnakeBodyAt(_snakeBody.Count - 1);
             }
             
@@ -146,25 +166,7 @@ namespace _Script
 
         public bool IsValidPosition(Vector3 position)
         {
-            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-            foreach (var sb in _snakeBody)
-            {
-                var pos = sb.transform.position;
-                if (Vector3.Distance(pos, position) < 0.01f)
-                    return false;
-            }
-
-            if (WallManager.Instance.IsWall(position))
-                return false;
-            
-            var minX = -GridSystem.Instance.Width / 2;
-            var maxX = GridSystem.Instance.Width / 2;
-            var minY = -GridSystem.Instance.Height / 2;
-            var maxY = GridSystem.Instance.Height / 2;
-            if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
-                return false;
-
-            return true;
+            return GridSystem.Instance.IsValidPosition(position);
         }
     }
 }

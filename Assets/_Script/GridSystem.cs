@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Collections.Generic;
 
 namespace _Script
 {
@@ -17,11 +18,12 @@ namespace _Script
         public int OffsetX;
         public int OffsetY;
 
-        private int[,] _map;
+        private Dictionary<(int, int), bool> _hashTable;
 
         private void Awake()
         {
             Instance = this;
+            _hashTable = new Dictionary<(int, int), bool>();
             Init();
         }
 
@@ -47,15 +49,34 @@ namespace _Script
                     spriteRenderer.sortingOrder = 1;
                 }
             }
+        }
 
-            _map = new int[Width, Height];
-        }
-        
-        // Update is called once per frame
-        void Update()
+        public void SetGrid(int x, int y, bool value)
         {
-        
+            _hashTable[(x, y)] = value;
         }
-        
+
+        public bool GetGrid(int x, int y)
+        {
+            if (!_hashTable.ContainsKey((x, y)))
+                _hashTable[(x, y)] = false;
+
+            return _hashTable[(x, y)];
+        }
+
+        public bool IsValidPosition(Vector3 position)
+        {
+            var x = (int) position.x;
+            var y = (int) position.y;
+
+            var minX = -Width / 2;
+            var maxX = Width / 2;
+            var minY = -Height / 2;
+            var maxY = Height / 2;
+            if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
+                return false;
+
+            return !GetGrid(x, y); //HashTable[x, y] = true => Not valid
+        }
     }
 }

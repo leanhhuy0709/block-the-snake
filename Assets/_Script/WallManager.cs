@@ -16,21 +16,22 @@ namespace _Script
         private void Awake()
         {
             Instance = this;
+            InitDefaultWall();
         }
 
         void Start()
         {
-            InitDefaultWall();
             CreateWalls();
         }
 
         private void CreateWalls()
         {
             _walls = new List<GameObject>();
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < 3; i++)
             {
-                var wall = CreateNewWall(new Vector3(i, 0, 0));
+                var wall = CreateNewWall(new Vector3(2 + i * GridSystem.Instance.CellSize, 2, 0));
                 _walls.Add(wall);
+                GridSystem.Instance.SetGrid(2 + i, 2, true);
             }
         }
 
@@ -52,6 +53,7 @@ namespace _Script
             var wall = 
                 Instantiate(_defaultWall, _defaultWall.transform.position, _defaultWall.transform.rotation);
             
+            wall.transform.SetParent(this.transform);
             wall.SetActive(true);
             wall.transform.position = position;
             
