@@ -10,8 +10,7 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
-/car-moving-unity.sln
-/.idea
+
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
@@ -76,5 +75,25 @@ crashlytics-build.properties
 
 #Ignore all .meta file
 *.meta
+Assets/_Script/*.meta
+Assets/Assets/*.meta
+Assets/Prefab/*.meta
+
 #But not source file with postfix. which is everything but a folder
 !*.*.meta
+
+/.idea
+
+# Default ignored files
+/shelf/
+/workspace.xml
+# Rider ignored files
+/.idea.block-the-snake.iml
+/modules.xml
+/projectSettingsUpdater.xml
+/contentModel.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml

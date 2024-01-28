@@ -23,22 +23,20 @@ namespace _Script
             _snakeBody = new List<GameObject>();
             _pool = new List<GameObject>();
         }
+
         void Start()
         {
             InitDefaultBody();
             CreateSnake();
             _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
             _nextUpdate = Time.time;
-            
-            
         }
 
         void CreateSnake()
         {
             _direction = new Vector3(0, -1, 0);
             var body = CreateNewBody(new Vector3(0,0,0));
-            _snakeBody.Add(body);
-            
+            _snakeBody.Add(body);   
         }
 
         void Update()
@@ -53,8 +51,6 @@ namespace _Script
         // ReSharper disable Unity.PerformanceAnalysis
         void Move()
         {
-           
-            
             var newPos = GetSnakePosition() + _direction;
             if (!IsValidPosition(newPos)) return;
             
@@ -148,7 +144,7 @@ namespace _Script
             return _snakeBody[0].transform.position;
         }
 
-        private bool IsValidPosition(Vector3 position)
+        public bool IsValidPosition(Vector3 position)
         {
             // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
             foreach (var sb in _snakeBody)
@@ -157,6 +153,16 @@ namespace _Script
                 if (Vector3.Distance(pos, position) < 0.01f)
                     return false;
             }
+
+            if (WallManager.Instance.IsWall(position))
+                return false;
+            
+            var minX = -GridSystem.Instance.Width / 2;
+            var maxX = GridSystem.Instance.Width / 2;
+            var minY = -GridSystem.Instance.Height / 2;
+            var maxY = GridSystem.Instance.Height / 2;
+            if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
+                return false;
 
             return true;
         }
