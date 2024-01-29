@@ -49,7 +49,10 @@ namespace _Script
 
         private List<Vector2> _moveList;
 
-        private readonly Dictionary<(int, int), bool> _visited = new Dictionary<(int, int), bool>();
+        private readonly Dictionary<(int, int), bool> _visited = new();
+        private readonly Dictionary<(int, int), bool> _hashTable = new();
+
+        public bool IsSnakeOnSnake;
 
         private void Awake()
         {
@@ -63,7 +66,7 @@ namespace _Script
         {
             InitDefaultBody();
             CreateSnake();
-            _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
+            
             _nextUpdate = Time.time;
         }
 
@@ -72,54 +75,127 @@ namespace _Script
             _direction = new Vector2(0, -1);
             var body = CreateNewBody(new Vector2(0, 0));
             _snakeBody.Add(body);   
-
-            GridSystem.Instance.SetGrid(0, 0, true);
+            _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
+            _snakeBody[0].GetComponent<SpriteRenderer>().sortingOrder = 3;
+            if (IsSnakeOnSnake) GridSystem.Instance.SetGrid(0, 0, true);
         }
 
         void Update()
         {
             // HandleInput();
             if (!(Time.time >= _nextUpdate)) return;
+            UpdateNear();
             AutoMove();
             Move();
             
             _nextUpdate = Time.time + GameManager.Instance.Delay;
         }
 
-        void AutoMove()
+        // ReSharper disable Unity.PerformanceAnalysis
+        private void AutoMove()
         {
             if (_moveList.Count == 0)
             {
-                _direction = Vector2.zero;
-                return;
+                AStarSearchFood();
+                var lim = 50;
+                while (_moveList.Count == 0 && lim > 0)
+                {
+                    //Stuck
+                    var pos = GridSystem.Instance.GetRandomValidPosition();
+                    _hashTable.Clear();
+                    foreach (var sb in _snakeBody)
+                    {
+                        var oldPos = sb.transform.position;
+                        
+                        GridSystem.Instance.SetGrid((int)oldPos.x, (int)oldPos.y, false);
+                        
+                        sb.transform.position = pos;
+                    }
+
+                    var tmp = _snakeBody.Count / 2 < 5 ? _snakeBody.Count/2:5;
+                    for (var i = 0; i < tmp; i++)
+                    {
+                        RemoveSnakeBodyAt(_snakeBody.Count - 1);
+                    }
+                    
+                    UpdateNear();
+                    AStarSearchFood();
+                    lim--;
+                }
+
+                if (_moveList.Count == 0 && lim == 0)
+                {
+                    Debug.Log("Can't handle stuck");
+                }
             }
             _direction = _moveList[0];
             _moveList.RemoveAt(0);
+        }
+
+        private void UpdateNear()
+        {
+            var head = GetSnakePosition();
+            var x = (int)head.x;
+            var y = (int)head.y;
+            var isChange = false;
+            for (var i = -2; i <= 2; i++)
+            {
+                for (var j = -2; j <= 2; j++)
+                {
+                    var h1 = GetGrid(x + i, y + j);
+                    var h2 = GridSystem.Instance.GetGrid(x + i, y + j);
+                    
+                    if (h1 == h2) continue;
+                    SetGrid(x + i, y + j, h2);
+                    isChange = true;
+                }
+            }
+
+            if (isChange)
+            {
+                var tmp = 3 < _moveList.Count ? 3 : _moveList.Count;
+                for (var i = 0; i < tmp; i++)
+                {
+                    head = head + _moveList[i];
+                    if (GetGrid((int)head.x, (int)head.y))
+                    {
+                        //Have wall on moveList
+                        _moveList.Clear();
+                        break;
+                    }
+                }
+            }
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
         void Move()
         {
             var newPos = GetSnakePosition() + _direction;
-            if (!IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f) return;
+            if (!GridSystem.Instance.IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f) return;
             
-            
-            _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.yellow;
             var body = CreateNewBody(newPos);
-            _snakeBody.Insert(0, body);
-            // GridSystem.Instance.SetGrid((int) newPos.x, (int) newPos.y, true);
+            _snakeBody.Insert(1, body);
+
+            (_snakeBody[0].transform.position, _snakeBody[1].transform.position) 
+                = (_snakeBody[1].transform.position, _snakeBody[0].transform.position);
+
+            if (IsSnakeOnSnake) GridSystem.Instance.SetGrid((int) newPos.x, (int) newPos.y, true);
             if (IsEatFood(newPos))
             {
                 Food.Instance.GenerateRandomPosition();
             }
             else
             {
-                var tail = _snakeBody[^1];
-                // GridSystem.Instance.SetGrid((int) tail.transform.position.x, (int) tail.transform.position.y, false);
+                if (IsSnakeOnSnake)
+                {
+                    var tail = _snakeBody[^1];
+                    var position = tail.transform.position;
+                    if (_snakeBody.Count > 2 && Vector2.Distance(_snakeBody[^2].transform.position, position)< 0.01f)
+                        GridSystem.Instance.SetGrid((int) position.x, (int) position.y, false);
+                }
                 RemoveSnakeBodyAt(_snakeBody.Count - 1);
             }
             
-            _snakeBody[0].GetComponent<SpriteRenderer>().color = Color.blue;
         }
 
         GameObject CreateNewBody(Vector2 position)
@@ -189,12 +265,22 @@ namespace _Script
 
         private Vector2 GetSnakePosition()
         {
-            return (Vector2) _snakeBody[0].transform.position;
+            return _snakeBody[0].transform.position;
         }
 
-        public bool IsValidPosition(Vector2 position)
+        private bool IsValidPosition(Vector2 position)
         {
-            return GridSystem.Instance.IsValidPosition(position);
+            var x = (int) position.x;
+            var y = (int) position.y;
+
+            var minX = -GridSystem.Instance.Width / 2;
+            var maxX = GridSystem.Instance.Width / 2;
+            var minY = -GridSystem.Instance.Height / 2;
+            var maxY = GridSystem.Instance.Height / 2;
+            if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
+                return false;
+
+            return !GetGrid(x, y);
         }
 
         private void AStarSearchFood()
@@ -251,7 +337,75 @@ namespace _Script
                     }
                 }
             }
+        }
 
+        public bool AStarSearchChecked()
+        {
+            _visited.Clear();
+
+            List<AStarState> aStarStates = new();
+            var tmp = new AStarState();
+
+            var head = GetSnakePosition();
+
+            var food = Food.Instance.transform.position;
+
+            tmp.Initialization(head, food, new List<Vector2>());
+
+            aStarStates.Add(tmp);
+
+            _visited[((int) head.x,(int) head.y)] = true;
+
+            var directionArray = new Vector2[4];
+            directionArray[0] = new Vector2(0, 1);
+            directionArray[1] = new Vector2(0, -1);
+            directionArray[2] = new Vector2(1, 0);
+            directionArray[3] = new Vector2(-1, 0);
+
+            while (aStarStates.Count > 0)
+            {
+                aStarStates.Sort(new AStarStateComparer());
+                var currentState = aStarStates[^1];
+                aStarStates.RemoveAt(aStarStates.Count - 1);
+
+                var currPos = currentState.Current;
+                for (var i = 0; i < 4; i++)
+                {
+                    var newPos = currPos + directionArray[i];
+                    var x = (int) newPos.x;
+                    var y = (int) newPos.y;
+
+                    if (IsValidPosition(newPos) && !_visited.ContainsKey((x, y)))
+                    {
+                        if (currentState.Goal == newPos) {
+                            return true;
+                        }
+                        else
+                        {
+                            var tmpState = new AStarState();
+                            tmpState.Initialization(newPos, food, currentState.MoveList);
+                            tmpState.MoveList.Add(directionArray[i]);
+                            aStarStates.Add(tmpState);
+                            _visited[(x, y)] = true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+        
+        private void SetGrid(int x, int y, bool value)
+        {
+            _hashTable[(x, y)] = value;
+        }
+
+        private bool GetGrid(int x, int y)
+        {
+            if (!_hashTable.ContainsKey((x, y)))
+                _hashTable[(x, y)] = false;
+
+            return _hashTable[(x, y)];
         }
     }
 }

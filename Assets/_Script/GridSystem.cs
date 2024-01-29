@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 using System.Collections.Generic;
+using Random = UnityEngine.Random;
 
 namespace _Script
 {
@@ -77,6 +78,28 @@ namespace _Script
                 return false;
 
             return !GetGrid(x, y); //HashTable[x, y] = true => Not valid
+        }
+
+        // ReSharper disable Unity.PerformanceAnalysis
+        public Vector2 GetRandomValidPosition(int lim = 10)
+        {
+            if (lim == 0)
+            {
+                Debug.Log("Can't generate position");
+                return Vector2.zero;
+            }
+            var randomX = Random.Range(0, Width - 1) * CellSize;
+            var randomY = Random.Range(0, Height - 1) * CellSize;
+
+            var newPos = new Vector3(OffsetX + randomX, 
+                OffsetY + randomY, 0);
+
+            if (!IsValidPosition(newPos))
+            {
+                return GetRandomValidPosition(lim - 1);
+            }
+
+            return newPos;
         }
     }
 }

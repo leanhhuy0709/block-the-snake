@@ -29,7 +29,7 @@ namespace _Script
             var newPos = new Vector3(GridSystem.Instance.OffsetX + randomX, 
                 GridSystem.Instance.OffsetY + randomY, 0);
 
-            if (!Snake.Instance.IsValidPosition(newPos))
+            if (!GridSystem.Instance.IsValidPosition(newPos))
             {
                 GenerateRandomPosition(lim - 1);
                 return;
