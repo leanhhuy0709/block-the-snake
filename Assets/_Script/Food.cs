@@ -15,7 +15,7 @@ namespace _Script
             GenerateRandomPosition();
         }
 
-        public void GenerateRandomPosition(int lim = 10)
+        public void GenerateRandomPosition(int lim = 50)
         {
             if (lim == 0)
             {
@@ -23,19 +23,12 @@ namespace _Script
                 return;
             }
 
-            var randomX = Random.Range(0, GridSystem.Instance.Width - 1) * GridSystem.Instance.CellSize;
-            var randomY = Random.Range(0, GridSystem.Instance.Height - 1) * GridSystem.Instance.CellSize;
+            transform.position = GridSystem.Instance.GetRandomValidPosition();
 
-            var newPos = new Vector3(GridSystem.Instance.OffsetX + randomX, 
-                GridSystem.Instance.OffsetY + randomY, 0);
-
-            if (!GridSystem.Instance.IsValidPosition(newPos))
+            if (!Snake.Instance.AStarSearchChecked())
             {
                 GenerateRandomPosition(lim - 1);
-                return;
             }
-
-            transform.position = newPos;
         }
 
         // Update is called once per frame

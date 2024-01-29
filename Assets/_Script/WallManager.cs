@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,6 +25,12 @@ namespace _Script
             CreateWalls();
         }
 
+        private void Update()
+        {
+            if (GameManager.Instance.Debug)
+                ShowWallByHashTable();
+        }
+
         private void CreateWalls()
         {
             _walls = new List<GameObject>();
@@ -44,7 +51,7 @@ namespace _Script
             body.transform.SetParent(this.transform);
             body.transform.position = new Vector3(0, 0, 0);
             body.SetActive(false);
-            spriteRenderer.sortingOrder = 2;
+            spriteRenderer.sortingOrder = 5;
             _defaultWall = body;
         }
 
@@ -56,6 +63,8 @@ namespace _Script
             wall.transform.SetParent(this.transform);
             wall.SetActive(true);
             wall.transform.position = position;
+            
+            
             
             return wall;
         }
@@ -76,6 +85,33 @@ namespace _Script
         public int GetWallCount()
         {
             return _walls.Count;
+        }
+
+        private void ShowWallByHashTable()
+        {
+            foreach (var wall in _walls)
+            {
+                wall.SetActive(false);
+            }
+
+            var index = 0;
+            foreach (var (key, value) in GridSystem.Instance.GetHashTable())
+            {
+                if (value)
+                {
+                    if (index < _walls.Count)
+                    {
+                        _walls[index].SetActive(true);
+                        _walls[index].transform.position = new Vector3(key.Item1, key.Item2, 0);
+                    }
+                    else
+                    {
+                        _walls.Add(CreateNewWall(new Vector3(key.Item1, key.Item2, 0)));
+                    }
+
+                    index++;
+                }
+            }
         }
     }
 }

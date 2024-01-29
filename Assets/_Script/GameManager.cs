@@ -6,6 +6,7 @@ namespace _Script
     {
         public static GameManager Instance;
         public float Delay = 1;
+        public bool Debug;
         private void Awake()
         {
             Instance = this;

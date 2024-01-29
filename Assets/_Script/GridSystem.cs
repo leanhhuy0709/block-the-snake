@@ -81,18 +81,22 @@ namespace _Script
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
-        public Vector2 GetRandomValidPosition(int lim = 10)
+        public Vector2 GetRandomValidPosition(int lim = 50)
         {
             if (lim == 0)
             {
                 Debug.Log("Can't generate position");
                 return Vector2.zero;
             }
-            var randomX = Random.Range(0, Width - 1) * CellSize;
-            var randomY = Random.Range(0, Height - 1) * CellSize;
+            var minX = -Width / 2;
+            var maxX = Width / 2;
+            var minY = -Height / 2;
+            var maxY = Height / 2;
+            
+            var randomX = Random.Range(minX, maxX) * CellSize;
+            var randomY = Random.Range(minY, maxY) * CellSize;
 
-            var newPos = new Vector3(OffsetX + randomX, 
-                OffsetY + randomY, 0);
+            var newPos = new Vector3(randomX, randomY, 0);
 
             if (!IsValidPosition(newPos))
             {
@@ -100,6 +104,11 @@ namespace _Script
             }
 
             return newPos;
+        }
+
+        public Dictionary<(int, int), bool> GetHashTable()
+        {
+            return _hashTable;
         }
     }
 }

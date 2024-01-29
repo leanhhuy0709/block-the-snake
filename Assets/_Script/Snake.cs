@@ -28,10 +28,20 @@ namespace _Script
         public int Compare(AStarState x, AStarState y)
         {
             if (y != null && x != null && x.Value() > y.Value())
-                return -1;
-            else if (y != null && x != null && x.Value() < y.Value())
+            {
+                if (Snake.Instance.GoodAStar)
+                    return -1;
                 return 1;
-            else return 0;
+            }
+
+            if (y != null && x != null && x.Value() < y.Value())
+            {
+                if (Snake.Instance.GoodAStar)
+                    return 1;
+                return -1;
+            }
+            
+            return 0;
         }
     }
 
@@ -53,6 +63,7 @@ namespace _Script
         private readonly Dictionary<(int, int), bool> _hashTable = new();
 
         public bool IsSnakeOnSnake;
+        public bool GoodAStar;
 
         private void Awake()
         {
@@ -84,7 +95,7 @@ namespace _Script
         {
             // HandleInput();
             if (!(Time.time >= _nextUpdate)) return;
-            UpdateNear();
+            // UpdateNear();
             AutoMove();
             Move();
             
@@ -101,6 +112,7 @@ namespace _Script
                 while (_moveList.Count == 0 && lim > 0)
                 {
                     //Stuck
+                    Debug.Log("Stuck");
                     var pos = GridSystem.Instance.GetRandomValidPosition();
                     _hashTable.Clear();
                     foreach (var sb in _snakeBody)
@@ -113,12 +125,14 @@ namespace _Script
                     }
 
                     var tmp = _snakeBody.Count / 2 < 5 ? _snakeBody.Count/2:5;
+                    tmp = 0;
                     for (var i = 0; i < tmp; i++)
                     {
                         RemoveSnakeBodyAt(_snakeBody.Count - 1);
                     }
                     
-                    UpdateNear();
+                    // UpdateNear();
+                    // UpdateAll();
                     AStarSearchFood();
                     lim--;
                 }
@@ -167,11 +181,31 @@ namespace _Script
             }
         }
 
+        private void UpdateAll()
+        {
+            _hashTable.Clear();
+            foreach (var (key, value) in GridSystem.Instance.GetHashTable())
+            {
+                _hashTable[key] = value;
+            }
+        }
+        
         // ReSharper disable Unity.PerformanceAnalysis
         void Move()
         {
+            
+            
             var newPos = GetSnakePosition() + _direction;
-            if (!GridSystem.Instance.IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f) return;
+            if (!GridSystem.Instance.IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f)
+            {
+                return;
+            }
+            
+            foreach (var sb in _snakeBody)
+            {
+                var pos = sb.transform.position;
+                GridSystem.Instance.SetGrid((int) pos.x, (int) pos.y, false);
+            }
             
             var body = CreateNewBody(newPos);
             _snakeBody.Insert(1, body);
@@ -190,12 +224,16 @@ namespace _Script
                 {
                     var tail = _snakeBody[^1];
                     var position = tail.transform.position;
-                    if (_snakeBody.Count > 2 && Vector2.Distance(_snakeBody[^2].transform.position, position)< 0.01f)
-                        GridSystem.Instance.SetGrid((int) position.x, (int) position.y, false);
+                    GridSystem.Instance.SetGrid((int) position.x, (int) position.y, false);
                 }
                 RemoveSnakeBodyAt(_snakeBody.Count - 1);
             }
-            
+
+            foreach (var sb in _snakeBody)
+            {
+                var pos = sb.transform.position;
+                GridSystem.Instance.SetGrid((int) pos.x, (int) pos.y, true);
+            }
         }
 
         GameObject CreateNewBody(Vector2 position)
@@ -212,6 +250,7 @@ namespace _Script
             }
             body.SetActive(true);
             body.transform.position = position;
+            body.transform.SetParent(this.transform);
             
             return body;
         }
@@ -270,6 +309,7 @@ namespace _Script
 
         private bool IsValidPosition(Vector2 position)
         {
+            return GridSystem.Instance.IsValidPosition(position);
             var x = (int) position.x;
             var y = (int) position.y;
 
