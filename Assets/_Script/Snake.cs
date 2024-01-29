@@ -381,6 +381,9 @@ namespace _Script
 
         public bool AStarSearchChecked()
         {
+            if (!GridSystem.Instance.IsValidPosition(Food.Instance.transform.position))
+                return false;
+
             _visited.Clear();
 
             List<AStarState> aStarStates = new();

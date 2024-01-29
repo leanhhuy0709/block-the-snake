@@ -113,5 +113,10 @@ namespace _Script
                 }
             }
         }
+
+        public GameObject GetDefaultWall()
+        {
+            return _defaultWall;
+        }
     }
 }
