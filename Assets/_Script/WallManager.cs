@@ -35,16 +35,16 @@ namespace _Script
         private void CreateWalls()
         {
             _walls = new List<GameObject>();
-            for (var i = 0; i < GridSystem.Instance.Width * GridSystem.Instance.Height / 50; i++)
-            {
-                // var x = -GridSystem.Instance.Width/2 + i * 2;
-                var x = Random.Range(-GridSystem.Instance.Width / 2, GridSystem.Instance.Width / 2);
-                var y = Random.Range(-GridSystem.Instance.Height / 2, GridSystem.Instance.Height / 2);
-                if (x == 0 && y == 0) continue;
-                var wall = CreateNewWall(new Vector3(x, y, 0));
-                _walls.Add(wall);
-                GridSystem.Instance.SetGrid(x, y, -1);
-            }
+            // for (var i = 0; i < GridSystem.Instance.Width * GridSystem.Instance.Height / 50; i++)
+            // {
+            //     // var x = -GridSystem.Instance.Width/2 + i * 2;
+            //     var x = Random.Range(-GridSystem.Instance.Width / 2, GridSystem.Instance.Width / 2);
+            //     var y = Random.Range(-GridSystem.Instance.Height / 2, GridSystem.Instance.Height / 2);
+            //     if (x == 0 && y == 0) continue;
+            //     var wall = CreateNewWall(new Vector3(x, y, 0));
+            //     _walls.Add(wall);
+            //     GridSystem.Instance.SetGrid(x, y, -1);
+            // }
         }
 
         private void InitDefaultWall()
