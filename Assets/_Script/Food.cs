@@ -26,10 +26,10 @@ namespace _Script
             var newPos = GridSystem.Instance.GetRandomValidPosition(100);
             transform.position = newPos;
 
-            if (!Snake.Instance.AStarSearchFood(false))
-            {
-                GenerateRandomPosition(lim - 1);
-            }
+            // if (!Snake.Instance.AStarSearchFood(false))
+            // {
+            //     GenerateRandomPosition(lim - 1);
+            // }
             
             
         }
