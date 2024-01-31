@@ -15,7 +15,7 @@ namespace _Script
             GenerateRandomPosition();
         }
 
-        public void GenerateRandomPosition(int lim = 50)
+        public void GenerateRandomPosition(int lim = 1000)
         {
             if (lim == 0)
             {
@@ -23,12 +23,15 @@ namespace _Script
                 return;
             }
 
-            transform.position = GridSystem.Instance.GetRandomValidPosition();
+            var newPos = GridSystem.Instance.GetRandomValidPosition(100);
+            transform.position = newPos;
 
-            if (!Snake.Instance.AStarSearchChecked())
-            {
-                GenerateRandomPosition(lim - 1);
-            }
+            var tmp = GridSystem.Instance.IsValidPosition(newPos);
+
+            Debug.Log(newPos);
+            Debug.Log(tmp);
+            
+            
         }
 
         // Update is called once per frame

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace _Script
 {
@@ -9,17 +10,63 @@ namespace _Script
         public Vector2 Current;
         public Vector2 Goal;
         public List<Vector2> MoveList = new();
+        private float _value;
 
         public void Initialization(Vector2 current, Vector2 goal, List<Vector2> moveList)
         {
             Current = current;
             Goal = goal;
             MoveList = moveList.GetRange(0, moveList.Count);
+            _value = 0;
+            CalculateValue();
         }
 
-        public int Value()
+        private void CalculateValue()
         {
-            return (int)(MoveList.Count + Math.Abs(Goal.x - Current.x) + Math.Abs(Goal.y - Current.y));
+            var w = GridSystem.Instance.Width;
+            var h = GridSystem.Instance.Height;
+            var visit = new Dictionary<(int, int), int>();
+            var tmpX = 0;
+            var tmpY = 0;
+            foreach (var pos in MoveList)
+            {
+                if (pos.x >= 0.9 * w + GridSystem.Instance.OffsetX
+                    || pos.y >= 0.9 * h + GridSystem.Instance.OffsetY
+                    || pos.x <= 0.1 * w + GridSystem.Instance.OffsetX
+                    || pos.y <= 0.1 * h + GridSystem.Instance.OffsetY)
+                    _value += 1.5f;
+                else _value += 1f;
+                visit[((int)pos.x, 0)] = 1;
+                visit[(0, (int)pos.y)] = 1;
+            }
+
+            
+            foreach (var (key, value) in visit)
+            {
+                if (key.Item1 == 0) tmpX += 1;
+                else tmpY += 1;
+            }
+
+            if (tmpX >= w * 0.5f) _value *= 1.1f;
+            else if (tmpX >= w * 0.75f) _value *= 1.25f;
+            else if (tmpX >= w * 0.9f) _value *= 1.5f;
+            
+            if (tmpY >= h * 0.5f) _value *= 1.1f;
+            else if (tmpY >= h * 0.75f) _value *= 1.25f;
+            else if (tmpY >= h * 0.9f) _value *= 1.5f;
+        }
+
+        public float Value()
+        {
+            return _value;
+            // var w = GridSystem.Instance.Width;
+            // var h = GridSystem.Instance.Height;
+            // if (Current.x >= 0.9 * w + GridSystem.Instance.OffsetX 
+            //     || Current.y >= 0.9 * h + GridSystem.Instance.OffsetY 
+            //     || Current.x <= 0.1 * w + GridSystem.Instance.OffsetX 
+            //     || Current.y <= 0.1 * h + GridSystem.Instance.OffsetY)
+            //     return (int)((MoveList.Count + Math.Abs(Goal.x - Current.x) + Math.Abs(Goal.y - Current.y)) * 0.9);
+            // return (int)(MoveList.Count + Math.Abs(Goal.x - Current.x) + Math.Abs(Goal.y - Current.y));
         }   
     }
 
@@ -64,6 +111,8 @@ namespace _Script
 
         public bool IsSnakeOnSnake;
         public bool GoodAStar;
+        
+        private bool _check = false;
 
         private void Awake()
         {
@@ -97,6 +146,7 @@ namespace _Script
             if (!(Time.time >= _nextUpdate)) return;
             // UpdateNear();
             AutoMove();
+            if (_check) return;
             Move();
             
             _nextUpdate = Time.time + GameManager.Instance.Delay;
@@ -113,6 +163,17 @@ namespace _Script
                 {
                     //Stuck
                     Debug.Log("Stuck");
+
+                    HandleStuck();
+                    if (!_check)
+                    {
+                        _check = true;
+                        _nextUpdate = Time.time + 5;
+                        return;
+                    }
+                    _check = false;
+                    
+                    
                     var pos = GridSystem.Instance.GetRandomValidPosition();
                     _hashTable.Clear();
                     foreach (var sb in _snakeBody)
@@ -144,6 +205,11 @@ namespace _Script
             }
             _direction = _moveList[0];
             _moveList.RemoveAt(0);
+        }
+
+        private void HandleStuck()
+        {
+            
         }
 
         private void UpdateNear()
@@ -193,8 +259,6 @@ namespace _Script
         // ReSharper disable Unity.PerformanceAnalysis
         void Move()
         {
-            
-            
             var newPos = GetSnakePosition() + _direction;
             if (!GridSystem.Instance.IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f)
             {
@@ -214,9 +278,10 @@ namespace _Script
                 = (_snakeBody[1].transform.position, _snakeBody[0].transform.position);
 
             if (IsSnakeOnSnake) GridSystem.Instance.SetGrid((int) newPos.x, (int) newPos.y, true);
+            var isGenerateFood = false;
             if (IsEatFood(newPos))
             {
-                Food.Instance.GenerateRandomPosition();
+                isGenerateFood = true;
             }
             else
             {
@@ -234,6 +299,8 @@ namespace _Script
                 var pos = sb.transform.position;
                 GridSystem.Instance.SetGrid((int) pos.x, (int) pos.y, true);
             }
+            
+            if (isGenerateFood) Food.Instance.GenerateRandomPosition();
         }
 
         GameObject CreateNewBody(Vector2 position)
@@ -327,12 +394,20 @@ namespace _Script
         {
             _visited.Clear();
 
+            
+            
             List<AStarState> aStarStates = new();
             var tmp = new AStarState();
 
             var head = GetSnakePosition();
 
             var food = Food.Instance.transform.position;
+
+            if (!IsValidPosition(food))
+            {
+                Debug.Log("Food is not valid!!!");
+                return;
+            }
 
             tmp.Initialization(head, food, new List<Vector2>());
 
@@ -349,8 +424,18 @@ namespace _Script
             while (aStarStates.Count > 0)
             {
                 aStarStates.Sort(new AStarStateComparer());
-                var currentState = aStarStates[^1];
-                aStarStates.RemoveAt(aStarStates.Count - 1);
+                AStarState currentState;
+
+                if (Random.Range(0, 99) < 50 && aStarStates.Count > 1 && Math.Abs(aStarStates[^1].Value() - aStarStates[^2].Value()) < 0.0001f)
+                {
+                    currentState = aStarStates[^2];
+                    aStarStates.RemoveAt(aStarStates.Count - 2);
+                }
+                else
+                {
+                    currentState = aStarStates[^1];
+                    aStarStates.RemoveAt(aStarStates.Count - 1);
+                }
 
                 var currPos = currentState.Current;
                 for (var i = 0; i < 4; i++)
@@ -361,7 +446,7 @@ namespace _Script
 
                     if (IsValidPosition(newPos) && !_visited.ContainsKey((x, y)))
                     {
-                        if (currentState.Goal == newPos) {
+                        if (Vector2.Distance(currentState.Goal, newPos) < 0.01f) {
                             _moveList = currentState.MoveList.GetRange(0, currentState.MoveList.Count);
                             _moveList.Add(directionArray[i]);
                             return;
@@ -437,7 +522,15 @@ namespace _Script
 
             return false;
         }
-        
+
+
+        public List<Vector2> AStarFindFoodPosValid()
+        {
+            var foodList = new List<Vector2>();
+
+            return foodList;
+        }
+
         private void SetGrid(int x, int y, bool value)
         {
             _hashTable[(x, y)] = value;

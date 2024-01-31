@@ -19,7 +19,7 @@ namespace _Script
 
         void Update()
         {
-        
+            //
         }
     }
 }

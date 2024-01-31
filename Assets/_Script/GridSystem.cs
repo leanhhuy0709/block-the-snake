@@ -59,21 +59,18 @@ namespace _Script
 
         public bool GetGrid(int x, int y)
         {
-            if (!_hashTable.ContainsKey((x, y)))
-                _hashTable[(x, y)] = false;
-
-            return _hashTable[(x, y)];
+            return _hashTable.ContainsKey((x, y)) && _hashTable[(x, y)];
         }
 
         public bool IsValidPosition(Vector3 position)
         {
-            var x = (int) position.x;
-            var y = (int) position.y;
+            var x = (int) Math.Round(position.x);
+            var y = (int) Math.Round(position.y);
 
-            var minX = -Width / 2;
-            var maxX = Width / 2;
-            var minY = -Height / 2;
-            var maxY = Height / 2;
+            var minX = -(Width + 1) / 2;
+            var maxX = (Width + 1) / 2;
+            var minY = -(Height + 1) / 2;
+            var maxY = (Height + 1) / 2;
             if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
                 return false;
 
@@ -81,28 +78,30 @@ namespace _Script
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
-        public Vector2 GetRandomValidPosition(int lim = 50)
+        public Vector2 GetRandomValidPosition(int lim = 500)
         {
-            if (lim == 0)
+            var newPos = Vector2.zero;
+            while (lim > 0)
             {
-                Debug.Log("Can't generate position");
-                return Vector2.zero;
+                var minX = -(Width + 1) / 2;
+                var maxX = (Width + 1) / 2;
+                var minY = -(Height + 1) / 2;
+                var maxY = (Height + 1) / 2;
+
+                var randomX = Random.Range(minX + 1, maxX);
+                var randomY = Random.Range(minY + 1, maxY);
+
+                newPos = new Vector2(randomX, randomY);
+    
+                if (!IsValidPosition(newPos))
+                {
+                    // lim -= 1;
+                    continue;
+                }
+
+                return newPos;
             }
-            var minX = -Width / 2;
-            var maxX = Width / 2;
-            var minY = -Height / 2;
-            var maxY = Height / 2;
-            
-            var randomX = Random.Range(minX, maxX) * CellSize;
-            var randomY = Random.Range(minY, maxY) * CellSize;
-
-            var newPos = new Vector3(randomX, randomY, 0);
-
-            if (!IsValidPosition(newPos))
-            {
-                return GetRandomValidPosition(lim - 1);
-            }
-
+            Debug.Log("Can't generate position");
             return newPos;
         }
 
