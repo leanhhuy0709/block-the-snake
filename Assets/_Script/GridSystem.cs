@@ -19,12 +19,12 @@ namespace _Script
         public int OffsetX;
         public int OffsetY;
 
-        private Dictionary<(int, int), bool> _hashTable;
+        private Dictionary<(int, int), int> _hashTable;//-1 -> infinity
 
         private void Awake()
         {
             Instance = this;
-            _hashTable = new Dictionary<(int, int), bool>();
+            _hashTable = new Dictionary<(int, int), int>();
             Init();
         }
 
@@ -52,14 +52,17 @@ namespace _Script
             }
         }
 
-        public void SetGrid(int x, int y, bool value)
+        public void SetGrid(int x, int y, int value)
         {
             _hashTable[(x, y)] = value;
         }
 
-        public bool GetGrid(int x, int y)
+        public int GetGrid(int x, int y)
         {
-            return _hashTable.ContainsKey((x, y)) && _hashTable[(x, y)];
+            if (!_hashTable.ContainsKey((x, y)))
+                return 0;
+            
+            return _hashTable[(x, y)];
         }
 
         public bool IsValidPosition(Vector3 position)
@@ -74,7 +77,22 @@ namespace _Script
             if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
                 return false;
 
-            return !GetGrid(x, y); //HashTable[x, y] = true => Not valid
+            return GetGrid(x, y) == 0; //HashTable[x, y] != 0 => Not valid
+        }
+
+        public bool IsInGridSystem(Vector3 position)
+        {
+            var x = (int) Math.Round(position.x);
+            var y = (int) Math.Round(position.y);
+
+            var minX = -(Width + 1) / 2;
+            var maxX = (Width + 1) / 2;
+            var minY = -(Height + 1) / 2;
+            var maxY = (Height + 1) / 2;
+            if (position.x > maxX || position.y > maxY || position.x < minX || position.y < minY)
+                return false;
+
+            return true;
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
@@ -105,7 +123,7 @@ namespace _Script
             return newPos;
         }
 
-        public Dictionary<(int, int), bool> GetHashTable()
+        public Dictionary<(int, int), int> GetHashTable()
         {
             return _hashTable;
         }

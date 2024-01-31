@@ -34,12 +34,12 @@ namespace _Script
         private void CreateWalls()
         {
             _walls = new List<GameObject>();
-            for (var i = 0; i < 3; i++)
-            {
-                var wall = CreateNewWall(new Vector3(2 + i * GridSystem.Instance.CellSize, 2, 0));
-                _walls.Add(wall);
-                GridSystem.Instance.SetGrid(2 + i, 2, true);
-            }
+            // for (var i = 0; i < 3; i++)
+            // {
+            //     var wall = CreateNewWall(new Vector3(2 + i * GridSystem.Instance.CellSize, 2, 0));
+            //     _walls.Add(wall);
+            //     GridSystem.Instance.SetGrid(2 + i, 2, -1);
+            // }
         }
 
         private void InitDefaultWall()
@@ -97,7 +97,7 @@ namespace _Script
             var index = 0;
             foreach (var (key, value) in GridSystem.Instance.GetHashTable())
             {
-                if (value)
+                if (value != 0)
                 {
                     if (index < _walls.Count)
                     {
