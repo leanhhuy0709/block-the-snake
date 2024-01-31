@@ -95,7 +95,7 @@ namespace _Script
     
                 if (!IsValidPosition(newPos))
                 {
-                    // lim -= 1;
+                    lim -= 1;
                     continue;
                 }
 

@@ -11,6 +11,7 @@ namespace _Script
         public Vector2 Goal;
         public List<Vector2> MoveList = new();
         private float _value;
+        
 
         public void Initialization(Vector2 current, Vector2 goal, List<Vector2> moveList)
         {
@@ -113,6 +114,8 @@ namespace _Script
         public bool GoodAStar;
         
         private bool _check = false;
+        
+        public int SnakeLength;
 
         private void Awake()
         {
@@ -148,6 +151,8 @@ namespace _Script
             AutoMove();
             if (_check) return;
             Move();
+
+            SnakeLength = _snakeBody.Count;
             
             _nextUpdate = Time.time + GameManager.Instance.Delay;
         }
@@ -165,6 +170,7 @@ namespace _Script
                     Debug.Log("Stuck");
 
                     HandleStuck();
+                    if (_moveList.Count > 0) break;
                     if (!_check)
                     {
                         _check = true;
@@ -209,6 +215,35 @@ namespace _Script
 
         private void HandleStuck()
         {
+            // Help snake move sat tuong!!!
+            
+            var pos = GetSnakePosition();
+            
+            var directionArray = new Vector2[4];
+            directionArray[0] = new Vector2(0, 1);
+            directionArray[1] = new Vector2(0, -1);
+            directionArray[2] = new Vector2(1, 0);
+            directionArray[3] = new Vector2(-1, 0);
+
+            for (var j = 0; j < 10; j++)
+            {
+                var a = Random.Range(0, 4);
+                var b = Random.Range(0, 4);
+
+                (directionArray[a], directionArray[b]) = (directionArray[b], directionArray[a]);
+                
+                for (var i = 0; i < 4; i++)
+                {
+                    var newPos = pos + directionArray[i];
+                    if (IsValidPosition(newPos))
+                    {
+                        pos = newPos;
+                        _moveList.Add(directionArray[i]);
+                        break;
+                    }
+                }
+            }
+            
             
         }
 
