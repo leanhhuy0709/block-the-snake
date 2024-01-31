@@ -186,44 +186,21 @@ namespace _Script
                 AStarSearchFood();
                 if (_moveList.Count == 0)
                 {
-                    if (!_check)
-                    {
-                        _check = true;
-                        _nextUpdate = Time.time + 5;
-                        return;
-                    }
-                    _check = false;
-                    Debug.Log("Stuck");
-                }
-                
-                var lim = 50;
-                while (_moveList.Count == 0 && lim > 0)
-                {
-                    var pos = GridSystem.Instance.GetRandomValidPosition();
+                    // if (!_check)
+                    // {
+                    //     _check = true;
+                    //     _nextUpdate = Time.time + 5;
+                    //     return;
+                    // }
+                    // _check = false;
+                    // Debug.Log("Stuck");
                     foreach (var sb in _snakeBody)
                     {
-                        var oldPos = sb.transform.position;
-                        
-                        GridSystem.Instance.SetGrid((int)oldPos.x, (int)oldPos.y, 0);
-                        
-                        sb.transform.position = pos;
+                        _moveList.Add(Vector2.zero);
                     }
-                    GridSystem.Instance.SetGrid((int)pos.x, (int)pos.y, 1);
-                    var tmp = _snakeBody.Count / 2 < 5 ? _snakeBody.Count/2:5;
-                    tmp = 0;
-                    for (var i = 0; i < tmp; i++)
-                    {
-                        RemoveSnakeBodyAt(_snakeBody.Count - 1);
-                    }
-                    
-                    AStarSearchFood();
-                    lim--;
                 }
-
-                if (_moveList.Count == 0 && lim == 0)
-                {
-                    Debug.Log("Can't handle stuck");
-                }
+                
+                
             }
             _direction = _moveList[0];
             _moveList.RemoveAt(0);
@@ -312,11 +289,18 @@ namespace _Script
         void Move()
         {
             var newPos = GetSnakePosition() + _direction;
-            if (!GridSystem.Instance.IsValidPosition(newPos) || Vector2.Distance(_direction, Vector2.zero) < 0.01f)
+            
+            if (Vector2.Distance(_direction, Vector2.zero) < 0.01f)
+            {
+                // Do nothing
+            }
+            else if (!GridSystem.Instance.IsValidPosition(newPos))
             {
                 Debug.Log("Can't move!");
                 return;
             }
+
+            
             
             foreach (var sb in _snakeBody)
             {
@@ -402,7 +386,7 @@ namespace _Script
             return _snakeBody[0].transform.position;
         }
 
-        private bool AStarSearchFood(bool isUpdateMoveList = true)
+        public bool AStarSearchFood(bool isUpdateMoveList = true)
         {
             _visited.Clear();
             

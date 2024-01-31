@@ -778,8 +778,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d949d4addb85d95428c9dcdebc0c6e63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Width: 6
-  Height: 6
+  Width: 100
+  Height: 50
   CellSize: 1
   Square: {fileID: 7482667652216324306, guid: 48e93eef0688c4a259cb0eddcd8661f7, type: 3}
   OffsetX: 0
@@ -828,7 +828,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b775023e2346c44196d3fb854b7f34d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Delay: 0.05
+  Delay: 0
   Debug: 0
 --- !u!1 &1377892149
 GameObject:
